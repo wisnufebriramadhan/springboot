@@ -6,9 +6,11 @@ import com.startechinnovation.userapi.dto.TransferRequest;
 import com.startechinnovation.userapi.entity.Account;
 import com.startechinnovation.userapi.entity.Transaction;
 import com.startechinnovation.userapi.entity.TransactionSequence;
+import com.startechinnovation.userapi.entity.User;
 import com.startechinnovation.userapi.repository.AccountRepository;
 import com.startechinnovation.userapi.repository.TransactionRepository;
 import com.startechinnovation.userapi.repository.TransactionSequenceRepository;
+import com.startechinnovation.userapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ public class BankingService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final TransactionSequenceRepository sequenceRepository;
+    private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -105,6 +108,12 @@ public class BankingService {
             throw new RuntimeException("Access Denied: You are not the owner of this account");
         }
         return account;
+    }
+
+    public List<Account> getAccountsByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getAccounts();
     }
 
     public List<Transaction> getTransactionHistory(String accountNumber, String currentUsername) {

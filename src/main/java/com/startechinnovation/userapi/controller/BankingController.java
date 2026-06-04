@@ -5,6 +5,8 @@ import com.startechinnovation.userapi.dto.TransactionResponse;
 import com.startechinnovation.userapi.dto.TransferRequest;
 import com.startechinnovation.userapi.entity.Account;
 import com.startechinnovation.userapi.entity.Transaction;
+import com.startechinnovation.userapi.entity.User;
+import com.startechinnovation.userapi.repository.UserRepository;
 import com.startechinnovation.userapi.service.BankingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -38,6 +40,13 @@ public class BankingController {
 
         TransactionResponse response = bankingService.transfer(request);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/my-accounts")
+    @Operation(summary = "Daftar Akun Saya", description = "Melihat semua rekening yang dimiliki oleh user yang sedang login")
+    public ResponseEntity<ApiResponse<List<Account>>> getMyAccounts() {
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(ApiResponse.success(bankingService.getAccountsByUsername(currentUsername)));
     }
 
     @GetMapping("/account/{accountNumber}")
