@@ -25,6 +25,7 @@ public class User {
     @Column(nullable = false)
     private String role; // "ROLE_CUSTOMER" or "ROLE_ADMIN"
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "branch_id")
     private Branch branch;
