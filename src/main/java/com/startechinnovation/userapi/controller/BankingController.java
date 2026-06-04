@@ -38,8 +38,15 @@ public class BankingController {
             throw new RuntimeException("Access Denied: You can only transfer from your own account");
         }
 
-        TransactionResponse response = bankingService.transfer(request);
+        TransactionResponse response = bankingService.transfer(request, currentUsername);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/account/inquiry/{accountNumber}")
+    @Operation(summary = "Inquiry Rekening Tujuan", description = "Cek nama pemilik rekening tujuan")
+    public ResponseEntity<ApiResponse<String>> inquiry(@PathVariable String accountNumber) {
+        Account account = bankingService.getAccountDetails(accountNumber);
+        return ResponseEntity.ok(ApiResponse.success(account.getAccountHolderName()));
     }
 
     @GetMapping("/my-accounts")

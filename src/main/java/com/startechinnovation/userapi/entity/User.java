@@ -25,6 +25,9 @@ public class User {
     @Column(nullable = false)
     private String role; // "ROLE_CUSTOMER" or "ROLE_ADMIN"
 
+    @Column(nullable = false)
+    private String pin; // Hashed PIN
+
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "branch_id")

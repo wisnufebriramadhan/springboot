@@ -18,5 +18,8 @@ public class TransferRequest {
     @Min(value = 1, message = "Amount must be at least 1")
     private BigDecimal amount;
 
+    @NotBlank(message = "PIN is required")
+    private String pin;
+
     private String description;
 }

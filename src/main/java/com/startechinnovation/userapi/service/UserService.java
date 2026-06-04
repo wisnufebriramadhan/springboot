@@ -58,6 +58,7 @@ public class UserService {
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .pin(passwordEncoder.encode("123456")) // Default PIN for now, should come from request
                 .role("ROLE_CUSTOMER")
                 .branch(branch)
                 .build();

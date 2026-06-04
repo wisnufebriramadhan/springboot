@@ -13,6 +13,7 @@ import com.startechinnovation.userapi.repository.TransactionSequenceRepository;
 import com.startechinnovation.userapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,11 +30,19 @@ public class BankingService {
     private final TransactionSequenceRepository sequenceRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public TransactionResponse transfer(TransferRequest request) {
+    public TransactionResponse transfer(TransferRequest request, String currentUsername) {
         if (request.getSourceAccountNumber().equals(request.getDestinationAccountNumber())) {
             throw new RuntimeException("Cannot transfer to the same account");
+        }
+
+        User user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (!passwordEncoder.matches(request.getPin(), user.getPin())) {
+            throw new RuntimeException("Invalid PIN");
         }
 
         Account sourceAccount = accountRepository.findByAccountNumber(request.getSourceAccountNumber())
