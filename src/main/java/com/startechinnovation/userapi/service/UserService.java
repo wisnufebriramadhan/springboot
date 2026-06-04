@@ -28,6 +28,14 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
+    public void setPin(String username, String pin) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPin(passwordEncoder.encode(pin));
+        userRepository.save(user);
+    }
+
+    @Transactional
     public void registerAdmin(RegisterAdminRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
