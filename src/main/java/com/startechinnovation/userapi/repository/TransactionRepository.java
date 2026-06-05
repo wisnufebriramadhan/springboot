@@ -17,5 +17,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
            "ORDER BY t.transactionDate DESC")
     List<Transaction> findAllByBranch(@Param("branch") Branch branch);
 
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE " +
+           "t.sourceAccountNumber IN (SELECT a.accountNumber FROM Account a WHERE a.branch = :branch) OR " +
+           "t.destinationAccountNumber IN (SELECT a.accountNumber FROM Account a WHERE a.branch = :branch)")
+    long countAllByBranch(@Param("branch") Branch branch);
+
     List<Transaction> findAllByOrderByTransactionDateDesc();
 }

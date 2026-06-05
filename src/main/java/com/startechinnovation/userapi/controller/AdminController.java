@@ -10,6 +10,7 @@ import com.startechinnovation.userapi.entity.Transaction;
 import com.startechinnovation.userapi.entity.User;
 import com.startechinnovation.userapi.repository.AccountRepository;
 import com.startechinnovation.userapi.repository.AuditLogRepository;
+import com.startechinnovation.userapi.repository.BranchRepository;
 import com.startechinnovation.userapi.repository.TransactionRepository;
 import com.startechinnovation.userapi.repository.UserRepository;
 import com.startechinnovation.userapi.service.BranchService;
@@ -24,7 +25,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -37,8 +40,33 @@ public class AdminController {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final AuditLogRepository auditLogRepository;
+    private final BranchRepository branchRepository;
     private final BranchService branchService;
     private final UserService userService;
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_BRANCH_ADMIN')")
+    @Operation(summary = "Dashboard Summary", description = "Melihat ringkasan statistik dashboard")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getSummary() {
+        String adminUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        User admin = userRepository.findByUsername(adminUsername).orElseThrow();
+
+        Map<String, Object> summary = new HashMap<>();
+        
+        if (admin.getRole().equals("ROLE_SUPER_ADMIN")) {
+            summary.put("totalAccounts", accountRepository.count());
+            summary.put("totalBranches", branchRepository.count());
+            summary.put("totalTransactions", transactionRepository.count());
+            summary.put("totalAdmins", userRepository.findByRole("ROLE_BRANCH_ADMIN").size());
+        } else {
+            summary.put("totalAccounts", accountRepository.countByBranch(admin.getBranch()));
+            summary.put("totalBranches", 1);
+            summary.put("totalTransactions", transactionRepository.countAllByBranch(admin.getBranch()));
+            summary.put("totalAdmins", 1);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(summary));
+    }
 
     @GetMapping("/accounts")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_BRANCH_ADMIN')")
@@ -59,7 +87,7 @@ public class AdminController {
     @GetMapping("/transactions")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_BRANCH_ADMIN')")
     @Operation(summary = "Daftar Transaksi", description = "Melihat semua transaksi (Super Admin) atau transaksi di cabangnya (Branch Admin)")
-    public ResponseEntity<ApiResponse<List<Transaction>>> getAllTransactions() {
+    public ResponseEntity<ApiResponse<List<com.startechinnovation.userapi.dto.TransactionDetailResponse>>> getAllTransactions() {
         String adminUsername = SecurityContextHolder.getContext().getAuthentication().getName();
         User admin = userRepository.findByUsername(adminUsername).orElseThrow();
 
@@ -69,7 +97,29 @@ public class AdminController {
         } else {
             transactions = transactionRepository.findAllByBranch(admin.getBranch());
         }
-        return ResponseEntity.ok(ApiResponse.success(transactions));
+
+        List<com.startechinnovation.userapi.dto.TransactionDetailResponse> detailedTransactions = transactions.stream()
+                .map(t -> {
+                    String sourceName = accountRepository.findByAccountNumber(t.getSourceAccountNumber())
+                            .map(Account::getAccountHolderName).orElse("Unknown");
+                    String destName = accountRepository.findByAccountNumber(t.getDestinationAccountNumber())
+                            .map(Account::getAccountHolderName).orElse("External/Unknown");
+
+                    return com.startechinnovation.userapi.dto.TransactionDetailResponse.builder()
+                            .id(t.getId())
+                            .referenceNumber(t.getReferenceNumber())
+                            .sourceAccountNumber(t.getSourceAccountNumber())
+                            .sourceAccountName(sourceName)
+                            .destinationAccountNumber(t.getDestinationAccountNumber())
+                            .destinationAccountName(destName)
+                            .amount(t.getAmount())
+                            .status(t.getStatus())
+                            .description(t.getDescription())
+                            .transactionDate(t.getTransactionDate())
+                            .build();
+                }).toList();
+
+        return ResponseEntity.ok(ApiResponse.success(detailedTransactions));
     }
 
     @GetMapping("/audit-logs")
