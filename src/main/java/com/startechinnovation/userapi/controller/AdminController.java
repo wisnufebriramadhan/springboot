@@ -4,9 +4,13 @@ import com.startechinnovation.userapi.dto.ApiResponse;
 import com.startechinnovation.userapi.dto.BranchRequest;
 import com.startechinnovation.userapi.dto.RegisterAdminRequest;
 import com.startechinnovation.userapi.entity.Account;
+import com.startechinnovation.userapi.entity.AuditLog;
 import com.startechinnovation.userapi.entity.Branch;
+import com.startechinnovation.userapi.entity.Transaction;
 import com.startechinnovation.userapi.entity.User;
 import com.startechinnovation.userapi.repository.AccountRepository;
+import com.startechinnovation.userapi.repository.AuditLogRepository;
+import com.startechinnovation.userapi.repository.TransactionRepository;
 import com.startechinnovation.userapi.repository.UserRepository;
 import com.startechinnovation.userapi.service.BranchService;
 import com.startechinnovation.userapi.service.UserService;
@@ -31,6 +35,8 @@ public class AdminController {
 
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
+    private final AuditLogRepository auditLogRepository;
     private final BranchService branchService;
     private final UserService userService;
 
@@ -48,6 +54,36 @@ public class AdminController {
             accounts = accountRepository.findByBranch(admin.getBranch());
         }
         return ResponseEntity.ok(ApiResponse.success(accounts));
+    }
+
+    @GetMapping("/transactions")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_BRANCH_ADMIN')")
+    @Operation(summary = "Daftar Transaksi", description = "Melihat semua transaksi (Super Admin) atau transaksi di cabangnya (Branch Admin)")
+    public ResponseEntity<ApiResponse<List<Transaction>>> getAllTransactions() {
+        String adminUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        User admin = userRepository.findByUsername(adminUsername).orElseThrow();
+
+        List<Transaction> transactions;
+        if (admin.getRole().equals("ROLE_SUPER_ADMIN")) {
+            transactions = transactionRepository.findAllByOrderByTransactionDateDesc();
+        } else {
+            transactions = transactionRepository.findAllByBranch(admin.getBranch());
+        }
+        return ResponseEntity.ok(ApiResponse.success(transactions));
+    }
+
+    @GetMapping("/audit-logs")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    @Operation(summary = "Audit Trail", description = "Melihat log aktivitas sistem (Super Admin only)")
+    public ResponseEntity<ApiResponse<List<AuditLog>>> getAuditLogs() {
+        return ResponseEntity.ok(ApiResponse.success(auditLogRepository.findAllByOrderByTimestampDesc()));
+    }
+
+    @GetMapping("/branch-admins")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    @Operation(summary = "Daftar Admin Cabang", description = "Melihat semua user dengan role ROLE_BRANCH_ADMIN")
+    public ResponseEntity<ApiResponse<List<User>>> getBranchAdmins() {
+        return ResponseEntity.ok(ApiResponse.success(userRepository.findByRole("ROLE_BRANCH_ADMIN")));
     }
 
     @PostMapping("/register-admin")

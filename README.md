@@ -171,4 +171,5 @@ Saat aplikasi dijalankan, akun berikut otomatis terdaftar di PostgreSQL:
 2. **User: `branch_admin_jkt`** (`ROLE_BRANCH_ADMIN`, Cabang JKT)
 3. **User: `wisnu`** (`ROLE_CUSTOMER`, Cabang JKT)
 
-**gemini** : gemini --resume 91bdd8b1-c808-4d93-a3da-cfe2eee6cd5b 
+**gemini API** : gemini --resume 91bdd8b1-c808-4d93-a3da-cfe2eee6cd5b 
+**gemini Laravel** : gemini --resume cc6f12e3-108f-4d92-a1f2-9f7fe07ce17b 
